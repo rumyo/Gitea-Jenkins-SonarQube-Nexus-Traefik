@@ -1,0 +1,24 @@
+version: '3.6'
+services:
+  traefik:
+    image: traefik:1.7.2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"      
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Listen on Docker events
+      - $PWD/traefik.toml:/traefik.toml
+      - $PWD/acme.json:/acme.json
+    labels:
+      - "traefik.enable=true"
+      - traefik.backend=traefik
+      - traefik.frontend.rule=Host:traefik.yeet.com
+      - traefik.docker.network=web
+      - traefik.port=8080
+    networks:
+      - web
+
+networks:
+  web:
+    external: true

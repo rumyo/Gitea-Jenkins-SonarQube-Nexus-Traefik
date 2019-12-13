@@ -1,0 +1,75 @@
+version: '3.6' 
+services:
+  jenkins:
+      image: "jenkins/jenkins"
+      expose:
+        - 8080
+        - 50000
+      environment:
+        - "JENKINS_OPTS=--prefix=/jenkins"
+      volumes:
+        - jenkins_home:/var/jenkins_home
+      labels:
+        - "traefik.frontend.rule=Host:jenkins.yeet.com"
+        - "traefik.backend=jenkins"
+        - "traefik.enable=true"
+        - "traefik.port=8080"
+        - "traefik.docker.network=web"
+        - "traefik.frontend.headers.SSLRedirect=true"
+        - "traefik.frontend.entryPoints=http,https"
+      networks:
+        - web
+  gitea:
+      image: gitea/gitea:latest
+      restart: always
+      environment:
+        - USER_UID=1000
+        - USER_GID=1000
+      networks:
+        - web
+        - gitea
+      volumes:
+        - ~/data/gitea:/data
+      ports:
+        - "2221:22"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.backend=gitea"
+        - "traefik.docker.network=web"
+        - "traefik.frontend.rule=Host:gitea.yeet.com"
+        - "traefik.port=3000"
+      depends_on:
+        - postgres
+  postgres:
+      image: postgres:alpine
+      restart: always
+      environment:
+        - POSTGRES_PASSWORD=seguridad25
+        - POSTGRES_USER=ubuntu
+        - POSTGRES_DB=giteadb
+      labels:
+        - "traefik.enable=false"
+      networks:
+        - gitea
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+        - ./data/postgres:/var/lib/postgresql
+  nexus:
+      image: sonatype/nexus3:3.9.0
+      labels:
+        - "traefik.frontend.rule=Host:nexus.yeet.com"
+        - "traefik.backend=nexus"
+        - "traefik.enable=true"
+        - "traefik.port=8081"
+        - "traefik.docker.network=web"
+        - "traefik.frontend.headers.SSLRedirect=true"
+        - "traefik.frontend.entryPoints=http,https"
+      networks:
+        - web 
+volumes:
+  jenkins_home: 
+networks:
+  web:
+    external: true
+  gitea:
+    external: false
